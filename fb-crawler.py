@@ -29,6 +29,10 @@ class Post:
 		self.consumptions = output['post_consumptions']
 		self.clicks = output['link_click']
 
+def getToken():
+	token = raw_input('Token expired. Enter new token\nGet one here: https://developers.facebook.com/tools/explorer/\n> ')
+	pickle.dump(token, open('token.p', 'wb'))
+	return token
 
 def auth():
 	""" auth works with a local pickle file with the access token, if access token expires, script prompts user with new input from cli """
@@ -37,18 +41,17 @@ def auth():
 	try:
 		token = pickle.load(open('token.p', 'rb'))
 	except IOError:
-		token = raw_input('No token found. Enter new token\nGet one here: https://developers.facebook.com/tools/explorer/\n> ')
-		pickle.dump(token, open('token.p', 'wb'))
+		token = getToken()
 
 	if token:
 		try:
 			graph = facepy.GraphAPI(token)
 			profile = graph.get('nrc')
 		except facepy.exceptions.OAuthError:
-			token = raw_input('Token expired. Enter new token\nGet one here: https://developers.facebook.com/tools/explorer/\n> ')
-			pickle.dump(token, open('token.p', 'wb'))
+			token = getToken()
 
 	return facepy.GraphAPI(token)
+
 
 graph = auth()
 
@@ -59,13 +62,14 @@ posts = graph.get(profile['id'] + '/posts')
 output = []
 database = []
 
-# crawl untill date?
-while len(database) < 1000:
+# crawl untill done: integrate crawl untill date?
+while posts['paging'].has_key('next'):
 	
 	for post in posts['data']:
 		database.append(Post(post))
 
 	posts = requests.get(posts['paging']['next']).json()
+	print 'Crawled %i posts' % len(database)
 
 # build mysql database perhaps?
 with open('fb-posts.p', 'wb') as pickle_out:
