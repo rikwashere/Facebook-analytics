@@ -1,8 +1,10 @@
+import unicodecsv as csv
 import datetime
 import requests
 import pickle
 import facepy
 import json 
+import os
 
 class Post:
 	def __init__(self, data):
@@ -29,6 +31,20 @@ class Post:
 		self.consumptions = output['post_consumptions']
 		self.clicks = output['link_click']
 
+	def to_file(self):
+		# check for keys, or process what to write to csv as arg
+
+		if 'output.csv' not in os.listdir('.'):
+			with open('output.csv', 'w') as csv_out:
+				writer = csv.writer(csv_out, delimiter='\t')
+				writer.writerow(['Article', 'Impressions', 'Consumptions', 'Clicks'])	
+		else:
+			out = [self.link, self.impressions, self.consumptions, self.clicks]
+		
+			with open('output.csv', 'a') as csv_out:
+				writer = csv.writer(csv_out, delimiter='\t')
+				writer.writerow(out)
+
 def getToken():
 	token = raw_input('Token expired. Enter new token\nGet one here: https://developers.facebook.com/tools/explorer/\n> ')
 	pickle.dump(token, open('token.p', 'wb'))
@@ -52,17 +68,12 @@ def auth():
 
 	return facepy.GraphAPI(token)
 
-
 graph = auth()
-
 profile = graph.get('nrc')
-
 posts = graph.get(profile['id'] + '/posts')
 
-output = []
 database = []
 
-# crawl untill done: integrate crawl untill date?
 while posts['paging'].has_key('next'):
 	
 	for post in posts['data']:
@@ -70,8 +81,7 @@ while posts['paging'].has_key('next'):
 
 	posts = requests.get(posts['paging']['next']).json()
 	print 'Crawled %i posts' % len(database)
-
-# build mysql database perhaps?
-with open('fb-posts.p', 'wb') as pickle_out:
-	pickle.dump(posts)
-
+	
+	# implement append to database instead of rewrite
+	with open('database.p', 'wb') as pickle_out:
+		pickle.dump(database, pickle_out)
