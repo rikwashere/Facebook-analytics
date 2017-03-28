@@ -14,19 +14,24 @@ class Post:
 		self.type = data['type']
 
 	def get_insight(self):
-		metrics = ['post_impressions', 'post_consumptions']
+		metrics = ['post_impressions', 'post_consumptions', 'post_consumptions_by_type']
 		output = {}
 
 		for m in metrics:
 			data = graph.get(self.id + '/insights/' + m)
-			output[m] = data['data'][0]['values'][0]['value']
+			if m == 'post_consumptions_by_type':
+				output['link_click'] = data['data'][0]['values'][0]['value']['link clicks']
+			else:
+				output[m] = data['data'][0]['values'][0]['value']
 
 		# dynamically update class attributes when added to metrics list
-		self.impressions = pickle_output['post_impressions']
+		self.impressions = output['post_impressions']
 		self.consumptions = output['post_consumptions']
+		self.clicks = output['link_click']
 
 
 def auth():
+	""" auth works with a local pickle file with the access token, if access token expires, script prompts user with new input from cli """
 	print 'Authenticating with Facebook...\n'
 
 	try:
