@@ -5,10 +5,13 @@ import facepy
 import json 
 
 class Post:
-	def __init__(self, dictionary):
-		# Rebuild sometimes
-		for k, v in dictionary.items():
-			setattr(self, k, v)
+	def __init__(self, data):
+		self.admin_creator = data['admin_creator']
+		self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
+		self.text = data['message']
+		self.link = data['link']
+		self.id = data['id']
+		self.type = data['type']
 
 	def get_insight(self):
 		metrics = ['post_impressions', 'post_consumptions']
@@ -56,7 +59,6 @@ while len(database) < 1000:
 	
 	for post in posts['data']:
 		database.append(Post(post))
-		print post['created_time']
 
 	posts = requests.get(posts['paging']['next']).json()
 
