@@ -10,6 +10,8 @@ class Post:
 	def __init__(self, data):
 		self.admin_creator = data['admin_creator']
 		self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
+
+		# posts sometimes do not have a message
 		self.text = data['message']
 		self.link = data['link']
 		self.id = data['id']
@@ -83,5 +85,6 @@ while posts['paging'].has_key('next'):
 	print 'Crawled %i posts' % len(database)
 	
 	# implement append to database instead of rewrite
-	with open('database.p', 'wb') as pickle_out:
+	# build sql database
+	with open('database.p', 'ab') as pickle_out:
 		pickle.dump(database, pickle_out)

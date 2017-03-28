@@ -2,3 +2,7 @@
 token.p
 
 output.csv
+
+*.p
+
+*.pyc
