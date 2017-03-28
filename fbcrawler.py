@@ -32,6 +32,7 @@ class Post:
 		self.impressions = output['post_impressions']
 		self.consumptions = output['post_consumptions']
 		self.clicks = output['link_click']
+		self.insight = True
 
 	def to_file(self):
 		# check for keys, or process what to write to csv as arg
@@ -41,11 +42,15 @@ class Post:
 				writer = csv.writer(csv_out, delimiter='\t')
 				writer.writerow(['Article', 'Impressions', 'Consumptions', 'Clicks'])	
 		else:
-			out = [self.link, self.impressions, self.consumptions, self.clicks]
+			if self.insight != True: 
+				self.get_insight()
 		
+			out = [self.link, self.impressions, self.consumptions, self.clicks]
+
 			with open('output.csv', 'a') as csv_out:
 				writer = csv.writer(csv_out, delimiter='\t')
 				writer.writerow(out)
+
 
 def getToken():
 	token = raw_input('Token expired. Enter new token\nGet one here: https://developers.facebook.com/tools/explorer/\n> ')
@@ -84,7 +89,4 @@ while posts['paging'].has_key('next'):
 	posts = requests.get(posts['paging']['next']).json()
 	print 'Crawled %i posts' % len(database)
 	
-	# implement append to database instead of rewrite
 	# build sql database
-	with open('database.p', 'ab') as pickle_out:
-		pickle.dump(database, pickle_out)
