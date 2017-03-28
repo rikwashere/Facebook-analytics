@@ -1,16 +1,8 @@
-import dateutil.parser as dateparser
-from prettytable import PrettyTable
-from scraper import connectTwitter
-from bs4 import BeautifulSoup
-import requests.packages.urllib3
 import datetime
-import operator
 import requests
 import pickle
 import facepy
 import json 
-import sys
-import re
 
 class Post:
 	def __init__(self, dictionary):
@@ -25,12 +17,12 @@ class Post:
 		for m in metrics:
 			data = graph.get(self.id + '/insights/' + m)
 			output[m] = data['data'][0]['values'][0]['value']
-			
-		self.impressions = output['post_impressions']
+
+		# dynamically update class attributes when added to metrics list
+		self.impressions = pickle_output['post_impressions']
 		self.consumptions = output['post_consumptions']
 
 
-	# rebuild auth handshake
 def auth():
 	print 'Authenticating with Facebook...\n'
 
@@ -39,7 +31,6 @@ def auth():
 	except IOError:
 		token = raw_input('No token found. Enter new token\nGet one here: https://developers.facebook.com/tools/explorer/\n> ')
 		pickle.dump(token, open('token.p', 'wb'))
-
 
 	if token:
 		try:
@@ -59,6 +50,8 @@ posts = graph.get(profile['id'] + '/posts')
 
 output = []
 database = []
+
+# crawl untill date?
 while len(database) < 1000:
 	
 	for post in posts['data']:
@@ -67,6 +60,7 @@ while len(database) < 1000:
 
 	posts = requests.get(posts['paging']['next']).json()
 
+# build mysql database perhaps?
 with open('fb-posts.p', 'wb') as pickle_out:
 	pickle.dump(posts)
 
