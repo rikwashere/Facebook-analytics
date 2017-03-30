@@ -8,11 +8,18 @@ import os
 
 class Post:
 	def __init__(self, data):
-		self.admin_creator = data['admin_creator']
 		self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
 
 		# posts sometimes do not have a message
-		self.text = data['message']
+		if data.has_key('status_type'):
+			if data['status_type'] != 'shared_story':
+				if data.has_key('message'):
+					self.text = data['message']
+
+		# admin creator datapoint not always present
+		if data.has_key('admin_creator'):
+			self.admin_creator = data['admin_creator']
+
 		self.link = data['link']
 		self.id = data['id']
 		self.type = data['type']
@@ -80,13 +87,20 @@ profile = graph.get('nrc')
 posts = graph.get(profile['id'] + '/posts')
 
 database = []
+dates = []
 
 while posts['paging'].has_key('next'):
 	
 	for post in posts['data']:
-		database.append(Post(post))
+		post_obj = Post(post)
+		database.append(post_obj)	
 
-	posts = requests.get(posts['paging']['next']).json()
-	print 'Crawled %i posts' % len(database)
+		if post_obj.timestamp.date() not in dates:
+			print 'Processing:', post_obj.timestamp.date()
+		
+		dates.append(post_obj.timestamp.date())
+
+	posts = requests.get(posts['paging']['next']).json()	
+	print '* Crawled %i posts' % len(database)
 	
 	# build sql database
