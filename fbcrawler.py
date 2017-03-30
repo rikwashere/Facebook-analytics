@@ -109,7 +109,7 @@ posts = graph.get(profile['id'] + '/posts')
 database = []
 dates = []
 
-while posts['paging'].has_key('next'):
+while posts.has_key('paging'):
 	
 	for post in posts['data']:
 		post_obj = Post(post)
