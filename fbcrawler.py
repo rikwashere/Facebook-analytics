@@ -5,11 +5,20 @@ import pickle
 import facepy
 import json 
 import os
+import re
 
 class Post:
 	def __init__(self, data):
+		self.text = None
+		self.id = None
+		self.link = None
+		self.creator = None
+		self.type = None
 		self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
 
+		if data.has_key('message'):
+			self.text = data['message']
+		
 		# posts sometimes do not have a message
 		if data.has_key('status_type'):
 			if data['status_type'] != 'shared_story':
@@ -18,8 +27,9 @@ class Post:
 
 		# admin creator datapoint not always present
 		if data.has_key('admin_creator'):
-			self.admin_creator = data['admin_creator']
+			self.creator = data['admin_creator']
 
+		# link not always present
 		if data.has_key('link'):
 			self.link = data['link']
 		
@@ -37,10 +47,18 @@ class Post:
 			else:
 				output[m] = data['data'][0]['values'][0]['value']
 
+		shares = graph.get(self.id + '?fields=shares')
+
 		# dynamically update class attributes when added to metrics list
 		self.impressions = output['post_impressions']
 		self.consumptions = output['post_consumptions']
 		self.clicks = output['link_click']
+
+		if shares.has_key('shares'):
+			self.shares = shares['shares']['count']
+		else:
+			self.shares = None
+		
 		self.insight = True
 
 	def to_file(self):
@@ -49,12 +67,12 @@ class Post:
 		if 'output.csv' not in os.listdir('.'):
 			with open('output.csv', 'w') as csv_out:
 				writer = csv.writer(csv_out, delimiter='\t')
-				writer.writerow(['Article', 'Impressions', 'Consumptions', 'Clicks'])	
+				writer.writerow(['Article', 'Impressions', 'Consumptions', 'Shares', 'Clicks'])	
 		else:
 			if self.insight != True: 
 				self.get_insight()
 		
-			out = [self.link, self.impressions, self.consumptions, self.clicks]
+			out = [self.link, self.impressions, self.consumptions, self.shares, self.clicks]
 
 			with open('output.csv', 'a') as csv_out:
 				writer = csv.writer(csv_out, delimiter='\t')
