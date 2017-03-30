@@ -20,7 +20,9 @@ class Post:
 		if data.has_key('admin_creator'):
 			self.admin_creator = data['admin_creator']
 
-		self.link = data['link']
+		if data.has_key('link'):
+			self.link = data['link']
+		
 		self.id = data['id']
 		self.type = data['type']
 
