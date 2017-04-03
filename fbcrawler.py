@@ -21,7 +21,7 @@ class Post:
 		# link not always present
 		if data.has_key('link'):
 			self.link = data['link']
-			
+
 		if data.has_key('message'):
 			self.text = data['message']
 			
@@ -40,10 +40,6 @@ class Post:
 		# admin creator datapoint not always present
 		if data.has_key('admin_creator'):
 			self.creator = data['admin_creator']
-
-		# link not always present
-		if data.has_key('link'):
-			self.link = data['link']
 		
 		self.id = data['id']
 		self.type = data['type']
@@ -80,15 +76,15 @@ class Post:
 			with open('output.csv', 'w') as csv_out:
 				writer = csv.writer(csv_out, delimiter='\t')
 				writer.writerow(['Article', 'Facebook ID', 'Impressions', 'Consumptions', 'Shares', 'Clicks'])	
-		else:
-			if self.insight != True: 
-				self.get_insight()
-		
-			out = [self.link, self.id, self.impressions, self.consumptions, self.shares, self.clicks]
 
-			with open('output.csv', 'a') as csv_out:
-				writer = csv.writer(csv_out, delimiter='\t')
-				writer.writerow(out)
+		if self.insight != True: 
+			self.get_insight()
+	
+		out = [self.link, self.id, self.impressions, self.consumptions, self.shares, self.clicks]
+
+		with open('output.csv', 'a') as csv_out:
+			writer = csv.writer(csv_out, delimiter='\t')
+			writer.writerow(out)
 
 
 def getToken():
