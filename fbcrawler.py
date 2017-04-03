@@ -41,18 +41,22 @@ class Post:
 		output = {}
 
 		for m in metrics:
-			data = graph.get(self.id + '/insights/' + m)
+			try: 
+				data = graph.get(self.id + '/insights/' + m)
+			except facepy.exceptions.OAuthError:
+				graph = auth()
+				data = graph.get(self.id + '/insights/' + m)
+
 			if m == 'post_consumptions_by_type':
 				output['link_click'] = data['data'][0]['values'][0]['value']['link clicks']
 			else:
 				output[m] = data['data'][0]['values'][0]['value']
 
-		shares = graph.get(self.id + '?fields=shares')
-
-		# dynamically update class attributes when added to metrics list
 		self.impressions = output['post_impressions']
 		self.consumptions = output['post_consumptions']
 		self.clicks = output['link_click']
+
+		shares = graph.get(self.id + '?fields=shares')
 
 		if shares.has_key('shares'):
 			self.shares = shares['shares']['count']
