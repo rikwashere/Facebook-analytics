@@ -18,6 +18,10 @@ class Post:
 
 		self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
 
+		# link not always present
+		if data.has_key('link'):
+			self.link = data['link']
+			
 		if data.has_key('message'):
 			self.text = data['message']
 			
