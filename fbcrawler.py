@@ -14,10 +14,18 @@ class Post:
 		self.link = None
 		self.creator = None
 		self.type = None
+		self.insight = None
+
 		self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
 
 		if data.has_key('message'):
 			self.text = data['message']
+			
+			# find shortener
+			if re.search('https://nrch.nl/', self.text):
+				match = re.search('https://nrch.nl/', self.text)
+				short = self.text[match.start():match.end() + 4]
+				self.link = requests.get(short).url
 		
 		# posts sometimes do not have a message
 		if data.has_key('status_type'):
@@ -40,12 +48,8 @@ class Post:
 		metrics = ['post_impressions', 'post_consumptions', 'post_consumptions_by_type']
 		output = {}
 
-		for m in metrics:
-			try: 
-				data = graph.get(self.id + '/insights/' + m)
-			except facepy.exceptions.OAuthError:
-				graph = auth()
-				data = graph.get(self.id + '/insights/' + m)
+		for m in metrics: 
+			data = graph.get(self.id + '/insights/' + m)
 
 			if m == 'post_consumptions_by_type':
 				output['link_click'] = data['data'][0]['values'][0]['value']['link clicks']
@@ -71,12 +75,12 @@ class Post:
 		if 'output.csv' not in os.listdir('.'):
 			with open('output.csv', 'w') as csv_out:
 				writer = csv.writer(csv_out, delimiter='\t')
-				writer.writerow(['Article', 'Impressions', 'Consumptions', 'Shares', 'Clicks'])	
+				writer.writerow(['Article', 'Facebook ID', 'Impressions', 'Consumptions', 'Shares', 'Clicks'])	
 		else:
 			if self.insight != True: 
 				self.get_insight()
 		
-			out = [self.link, self.impressions, self.consumptions, self.shares, self.clicks]
+			out = [self.link, self.id, self.impressions, self.consumptions, self.shares, self.clicks]
 
 			with open('output.csv', 'a') as csv_out:
 				writer = csv.writer(csv_out, delimiter='\t')
