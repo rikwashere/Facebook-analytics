@@ -47,6 +47,9 @@ class Post:
 			self.id = data['id']
 			self.type = data['type']
 
+			# write to sql in init, merging to_sql in init, so only update part remains
+			# add meta timestamp - crawl time - to data
+
 		elif source == 'sql':
 			keys = ['id', 'type', 'timestamp', 'link', 'creator', 'text', 'insight', 'impressions', 'consumptions', 'shares', 'clicks']
 			data = dict(zip(keys, data))
@@ -148,6 +151,8 @@ class Post:
 			c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", self.to_list())
 
 		conn.commit()
+
+		# rewrite to update: includie basis SQL dunmp in init: add timestam when entry updates. 
 
 
 def getToken():
