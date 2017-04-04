@@ -50,6 +50,7 @@ class Post:
 		elif source == 'sql':
 			keys = ['id', 'type', 'timestamp', 'link', 'creator', 'text', 'insight', 'impressions', 'consumptions', 'shares', 'clicks']
 			data = dict(zip(keys, data))
+
 			self.id = data['id']
 			self.type = data['type']
 			self.timestamp = datetime.datetime.strptime(data['timestamp'], '%Y-%m-%dT%H:%M:%S')
@@ -133,24 +134,16 @@ class Post:
 						None
 					]
 
-	def to_sql(self):
-		# check for db
+	def to_sql(self, update):
+		# connect db
 		conn = sqlite3.connect('facebook.db')
 		c = conn.cursor()
-			
-		c.execute('SELECT id FROM facebook')
 
-		# c.fetchall() returns a tuple?
-		ids = [id[0] for id in c.fetchall()]
-
-		if self.id in ids:
-			t = (self.id, )
-			c.execute('SELECT * FROM facebook WHERE id=?', t)
+		if update == True:
 			if self.insight == False:
 				self.get_insight()
-				c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", self.to_list())
-			else:
-				'%s already processed' % self.id
+				update = [ self.insight, self.impressions, self.consumptions, self.shares, self.clicks, self.id  ]
+				c.execute("UPDATE facebook SET insight = ?, impressions = ?, consumptions = ?, shares = ?, clicks = ? WHERE id = ?", update)
 		else:
 			c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", self.to_list())
 
@@ -219,10 +212,10 @@ while posts.has_key('paging'):
 			data = c.execute('SELECT * FROM facebook where id=?', t)
 			d = data.fetchall()
 			post_obj = Post(d[0], 'sql')
-			post_obj.to_sql()
+			post_obj.to_sql(True)
 		else:
 			post_obj = Post(post, 'facebook')
-			post_obj.to_sql()
+			post_obj.to_sql(False)
 
 		if post_obj.timestamp.date() not in dates:
 			print 'Processing:', post_obj.timestamp.date()
