@@ -3,6 +3,7 @@ import datetime
 import requests
 import pickle
 import facepy
+import sqlite3
 import json 
 import os
 import re
@@ -85,6 +86,12 @@ class Post:
 		with open('output.csv', 'a') as csv_out:
 			writer = csv.writer(csv_out, delimiter='\t')
 			writer.writerow(out)
+
+	def to_sql(self):
+		conn = sqlite3.connect('facebook.db')
+		c = conn.cursor()
+
+		c.execute('''CREATE TABLE Facebook ''')
 
 
 def getToken():
