@@ -10,3 +10,5 @@ output.csv
 *.csv
 
 *.txt
+
+*.db
