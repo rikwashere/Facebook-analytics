@@ -10,41 +10,58 @@ import os
 import re
 
 class Post:
-	def __init__(self, data):
-		self.text = None
-		self.id = None
-		self.link = None
-		self.creator = None
-		self.type = None
-		self.insight = False
+	def __init__(self, data, source):
+		if source == 'facebook':
+			self.text = None
+			self.id = None
+			self.link = None
+			self.creator = None
+			self.type = None
+			self.insight = False
 
-		self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
+			self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
 
-		# link not always present
-		if data.has_key('link'):
-			self.link = data['link']
+			# link not always present
+			if data.has_key('link'):
+				self.link = data['link']
 
-		if data.has_key('message'):
-			self.text = data['message']
+			if data.has_key('message'):
+				self.text = data['message']
+				
+				# find shortener
+				if re.search('https://nrch.nl/', self.text):
+					match = re.search('https://nrch.nl/', self.text)
+					short = self.text[match.start():match.end() + 4]
+					self.link = requests.get(short).url
 			
-			# find shortener
-			if re.search('https://nrch.nl/', self.text):
-				match = re.search('https://nrch.nl/', self.text)
-				short = self.text[match.start():match.end() + 4]
-				self.link = requests.get(short).url
-		
-		# posts sometimes do not have a message
-		if data.has_key('status_type'):
-			if data['status_type'] != 'shared_story':
-				if data.has_key('message'):
-					self.text = data['message']
+			# posts sometimes do not have a message
+			if data.has_key('status_type'):
+				if data['status_type'] != 'shared_story':
+					if data.has_key('message'):
+						self.text = data['message']
 
-		# admin creator datapoint not always present
-		if data.has_key('admin_creator'):
-			self.creator = data['admin_creator']['name']
-		
-		self.id = data['id']
-		self.type = data['type']
+			# admin creator datapoint not always present
+			if data.has_key('admin_creator'):
+				self.creator = data['admin_creator']['name']
+			
+			self.id = data['id']
+			self.type = data['type']
+
+		elif source == 'sql':
+			keys = ['id', 'type', 'timestamp', 'link', 'creator', 'text', 'insight', 'impressions', 'consumptions', 'shares', 'clicks']
+			data = dict(zip(keys, data))
+			self.id = data['id']
+			self.type = data['type']
+			self.timestamp = datetime.datetime.strptime(data['timestamp'], '%Y-%m-%dT%H:%M:%S')
+			self.link = data['link']
+			self.creator = data['creator']
+			self.text = data['text']
+			self.insight = data['insight']
+			self.impressions = data['impressions']
+			self.consumptions = data['consumptions']
+			self.shares = data['shares']
+			self.clicks = data['clicks']
+
 
 	def get_insight(self):
 		metrics = ['post_impressions', 'post_consumptions', 'post_consumptions_by_type']
@@ -92,6 +109,7 @@ class Post:
 		if self.insight == True:
 			return [	self.id,
 						self.type,
+						self.timestamp.isoformat(),
 						self.link,
 						self.creator,
 						self.text,
@@ -104,6 +122,7 @@ class Post:
 		else:
 			return [	self.id,
 						self.type,
+						self.timestamp.isoformat(),
 						self.link,
 						self.creator,
 						self.text,
@@ -116,26 +135,8 @@ class Post:
 
 	def to_sql(self):
 		# check for db
-		if 'facebook.db' not in os.listdir('.'):
-			conn = sqlite3.connect('facebook.db')
-			c = conn.cursor()
-			c.execute('''CREATE TABLE Facebook 
-							(	id text,
-								type text,
-								link text,
-								creator text,
-								message text,
-								insight boolean,
-								impressions real,
-								consumptions real,
-								shares real,
-								clicks real
-							)
-						''')
-			conn.commit()
-		else:
-			conn = sqlite3.connect('facebook.db')
-			c = conn.cursor()
+		conn = sqlite3.connect('facebook.db')
+		c = conn.cursor()
 			
 		c.execute('SELECT id FROM facebook')
 
@@ -147,11 +148,11 @@ class Post:
 			c.execute('SELECT * FROM facebook WHERE id=?', t)
 			if self.insight == False:
 				self.get_insight()
-				c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", self.to_list())
+				c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", self.to_list())
 			else:
 				'%s already processed' % self.id
 		else:
-			c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", self.to_list())
+			c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", self.to_list())
 
 		conn.commit()
 
@@ -183,15 +184,45 @@ graph = auth()
 profile = graph.get('nrc')
 posts = graph.get(profile['id'] + '/posts')
 
-database = []
+# resuming if db
+if 'facebook.db' not in os.listdir('.'):
+	conn = sqlite3.connect('facebook.db')
+	c = conn.cursor()
+	c.execute('''CREATE TABLE Facebook 
+				(	id text,
+					type text,
+					datum date,
+					link text,
+					creator text,
+					message text,
+					insight boolean,
+					impressions real,
+					consumptions real,
+					shares real,
+					clicks real
+				)
+			''')
+	conn.commit()
+	ids = []
+else:
+	conn = sqlite3.connect('facebook.db')
+	c = conn.cursor()
+	c.execute('SELECT id FROM facebook')
+	ids = [id[0] for id in c.fetchall()]
+
 dates = []
 
 while posts.has_key('paging'):
-	
 	for post in posts['data']:
-		post_obj = Post(post)
-		database.append(post_obj)	
-		post_obj.to_sql()
+		if post['id'] in ids:
+			t = (post['id'], )
+			data = c.execute('SELECT * FROM facebook where id=?', t)
+			d = data.fetchall()
+			post_obj = Post(d[0], 'sql')
+			post_obj.to_sql()
+		else:
+			post_obj = Post(post, 'facebook')
+			post_obj.to_sql()
 
 		if post_obj.timestamp.date() not in dates:
 			print 'Processing:', post_obj.timestamp.date()
@@ -199,6 +230,6 @@ while posts.has_key('paging'):
 		dates.append(post_obj.timestamp.date())
 
 	posts = requests.get(posts['paging']['next']).json()	
-	print '* Crawled %i posts' % len(database)
+	print '* Crawled %i posts' % len(dates)
 	
 	# build sql database
