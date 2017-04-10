@@ -152,7 +152,7 @@ class Post:
 
 		conn.commit()
 
-		# rewrite to update: includie basis SQL dunmp in init: add timestam when entry updates. 
+		# rewrite to update: include basic SQL dump		 in init: add timestamp when entry updates. 
 
 
 def getToken():
@@ -186,7 +186,7 @@ posts = graph.get(profile['id'] + '/posts')
 if 'facebook.db' not in os.listdir('.'):
 	conn = sqlite3.connect('facebook.db')
 	c = conn.cursor()
-	c.execute('''CREATE TABLE Facebook 
+	c.execute('''CREATE TABLE facebook 
 				(	id text,
 					type text,
 					datum date,
@@ -217,6 +217,7 @@ while posts.has_key('paging'):
 			data = c.execute('SELECT * FROM facebook where id=?', t)
 			d = data.fetchall()
 			post_obj = Post(d[0], 'sql')
+			# als time.now - time.post dan 24 uur: ververs insights	
 			post_obj.to_sql(True)
 		else:
 			post_obj = Post(post, 'facebook')

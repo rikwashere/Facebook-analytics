@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<script>
+function hide(num) {
+    var x = document.getElementById(num);
+    var x_btn = document.getElementById('btn-' + num);
+    if (x.style.display === 'none') {
+        x.style.display = 'block';
+        x_btn.innerHTML = 'Hide';
+    } else {
+        x.style.display = 'none';
+        x_btn.innerHTML = 'Show ';
+    }
+}
+</script>
+
+<h1>Laatste {{ posts|length }} posts</h1>
+{% for post in posts %}
+  <h2><a href={{ post.link }}>{{ ' '.join(post.link.split('/')[-1].split('-')[:-2]) }}</a></h2>
+  <div class='post' id={{ post.type }}>
+    <ul>
+      <li>{{ post.datum }}</li>
+      <li>Impressions: {{ post.impressions }}</li>
+      <li>Consumptions: {{ post.consumptions }}</li>
+      <li>Shares: {{ post.shares }}</li>
+      <li>Clicks: {{ post.clicks }}</li>
+      <li><a href="https://facebook.com/{{ post.id }}" target="_blank">Show on Facebook</a></li>
+      <li>Post message: <button onclick="hide({{ posts.index(post) }})" id='btn-{{ posts.index(post) }}' value='Show'>Show</button> 
+        <div id='{{ posts.index(post) }}' style='display:none'>
+          <p>
+            <i>{{ post.message }}</i>
+          </p> 
+          <p>
+          - {{ post.type }} by <strong>{{ post.creator }}</strong>
+          </p>
+      </div>
+      </li>
+    </ul>
+    <div>
+  {% else %}
+    <p>No results</p>
+  {% endfor %}
+</div>
+{% endblock %}

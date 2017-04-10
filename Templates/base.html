@@ -1,0 +1,16 @@
+<!doctype html>
+<title>Facebook analyzer</title>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+<div class="page">
+  <h1>Facebook posts</h1>
+	<form style="display: inline;" method="post" action="/search/" name="search">
+	      {{ form.search() }}
+	      <input type="submit" value="Zoek"></form>
+	</form>
+  </p>
+  {% block body %}{% endblock %}
+</div> 
+
+<div class='footer'>
+	<a href='\'>Terug</a>
+</div>
