@@ -46,7 +46,7 @@ function hide(num) {
       <tr>
         <td>Shares</td>
         <td>{{ post.shares }}</td>
-        <td></td>
+        <td>{{ post.creator }}</td>
         <td>{{ post.type }}</td>
       <tr>
         <td>Clicks</td>
@@ -57,7 +57,11 @@ function hide(num) {
     </table>
     <div>
   {% else %}
-    <p>No results</p>
+    No results
+    <div class='footer'>
+      <p><a href='\'>Terug</a></p>
+    </div>
+
   {% endfor %}
 </div>
 {% endblock %}

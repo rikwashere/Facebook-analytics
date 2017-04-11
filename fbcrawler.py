@@ -75,7 +75,10 @@ class Post:
 			data = graph.get(self.id + '/insights/' + m)
 
 			if m == 'post_consumptions_by_type':
-				output['link_click'] = data['data'][0]['values'][0]['value']['link clicks']
+				try:
+					output['link_click'] = data['data'][0]['values'][0]['value']['link clicks']
+				except TypeError:
+					output['link_click'] = None
 			else:
 				output[m] = data['data'][0]['values'][0]['value']
 
@@ -181,6 +184,9 @@ def auth():
 graph = auth()
 profile = graph.get('nrc')
 posts = graph.get(profile['id'] + '/posts')
+
+
+# if sys.argv[1] == -update check hydrated every post posted less than 24 hours ago and only crawl last day
 
 # resuming if db
 if 'facebook.db' not in os.listdir('.'):
