@@ -12,3 +12,7 @@ output.csv
 *.txt
 
 *.db
+
+*.log
+
+*.bak

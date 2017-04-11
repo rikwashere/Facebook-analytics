@@ -14,6 +14,7 @@ function hide(num) {
         x_btn.innerHTML = 'Show post message';
     }
 }
+
 </script>
 
 <h1>Laatste {{ posts|length }} posts</h1>
@@ -24,18 +25,28 @@ function hide(num) {
       <tr>
         <th></th>
         <th>Insights</th>
-        <th>Metadata</th>
+        {% if day %}
+        <th>Daily post average</th>
+        {% endif %} 
         <th>Post</th>
+        <th>Meta</th>
       </tr>
       <tr>
         <td>Impressions</td>
-        <td>{{ post.impressions }}</td>
+        <td><p>{{ post.impressions }}</p>
+        </td>
+        {% if day %}
+        <td>{{ day.impressions }} ({{ '%.1f' % (100 * (post.impressions / day.impressions)) }}%)</td>
+        {% endif %} 
         <td>{{ post.time_stamp }}</td>
         <td><a href="https://facebook.com/{{ post.id }}" target="_blank">View on Facebook</a></td>
       </tr>
       <tr>
         <td>Consumptions</td>
-        <td>{{ post.consumptions }}</td>
+        <td><p>{{ post.consumptions }}</p></td>
+        {% if day %}
+        <td>{{ day.consumptions }} ({{ '%.1f' % (100 * (post.consumptions / day.consumptions)) }}%)</td>
+        {% endif %} 
         <td><button onclick="hide({{ posts.index(post) }})" id='btn-{{ posts.index(post) }}' value='Show'>Show post message</button> 
           <div id='{{ posts.index(post) }}' style='display:none'>
               <i>{{ post.message }}</i>
@@ -44,23 +55,28 @@ function hide(num) {
       </tr>
       <tr>
         <td>Shares</td>
-        <td>{{ post.shares }}</td>
+        <td><p>{{ post.shares }}</p></td>  
+        {% if day %}
+        <td>{{ day.shares }} ({{ '%.1f' % (100 * (post.shares / day.shares if post.shares != None else 0)) }}%)</td>
+        {% endif %} 
         <td>{{ post.creator }}</td>
         <td>{{ post.type }}</td>
       <tr>
         <td>Clicks</td>
-        <td>{{ post.clicks }}</td>
-        <td>{{ post.week_day }}</td>
-        <td>{{ post.c_time }}</td>
+        <td><p>{{ post.clicks }}</p></td>
+        {% if day %}
+        <td>{{ day.clicks }} ({{ '%.1f' % (100 * (post.clicks / day.clicks)) }}%)</td>
+        {% endif %} 
+        <td id='week_day' data={{ post.week_day }}>{{ post.week_day }}</td>
+        <td>{{ post.mod_time }}</td>
       </tr>
-    </table>
-    <div>
-  {% else %}
-    No results
-    <div class='footer'>
-      <p><a href='\'>Terug</a></p>
-    </div>
 
+    </table>
+  {% else %}
+  <p>No results</p>
   {% endfor %}
+  <div>
+  <p><a href='\'>Terug</a></p>
+</div>
 </div>
 {% endblock %}

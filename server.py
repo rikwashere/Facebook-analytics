@@ -42,6 +42,7 @@ def query_db(query, args=(), one=False):
 	cur.close()
 	return (rv[0] if rv else None) if one else rv    
 
+
 @app.teardown_appcontext
 def close_db(error):
     """Closes the database again at the end of the request."""
@@ -54,17 +55,58 @@ def index():
 	posts = query_db('SELECT * FROM facebook ORDER BY time_stamp DESC')
 	search_form = SearchForm()	
 	num_post = 20
-	# rebuild
+
 	return render_template('show_posts.html', posts=posts[:num_post], form=search_form)
     
 @app.route('/search/', methods=['POST'])
 def handle_data():
+	keys = [ 'id', 'type', 'timestamp', 'c_time', 'week_day', 'mod_time', 'link', 'creator', 'text', 'impressions', 'consumptions', 'shares', 'clicks']
 	url = (request.form['search'], )
 	db = get_db()
 	app.logger.info('Looking for URL: %s', request.form['search'])
-
+	
 	post = query_db('SELECT * FROM facebook WHERE link = ?', url)
-	app.logger.info('Results: %s' % post)
+	app.logger.info('Matched: %i' % len(post))
+	
+	if len(post) > 0:
+		post_dict = dict(zip(keys, post[0]))
+		
+		# same week day
+		print 'Looking for day: %i' % post_dict['week_day']
+		data = query_db('SELECT impressions, consumptions, shares, clicks FROM facebook WHERE week_day = ?', (post_dict['week_day'], ))
+		
+		x = []
+		for d in data:
+			nums = []
+			for num in d:
+				if num == None:
+					num = 0
+				nums.append(num)
+			x.append(nums)
+
+		data = x
+		for d in data:
+			if data.index(d) == 0:
+				day = { 'impressions' : [d[0]],
+						'consumptions' : [d[1]],
+						'shares' : [d[2]],
+						'clicks' : [d[3]]
+						 }
+
+			day['impressions'].append(d[0])
+			day['consumptions'].append(d[1])
+			day['shares'].append(d[2])
+			day['clicks'].append(d[3])
+
+		day['impressions'] = sum(day['impressions']) / len(day['impressions'])
+		day['consumptions'] = sum(day['consumptions']) / len(day['consumptions'])
+		day['shares'] = sum(day['shares']) / len(day['shares'])
+		day['clicks'] = sum(day['clicks']) / len(day['clicks'])
+
+		app.logger.info('Results: %s' % post)
+	else:
+		day = None
 	search_form = SearchForm()	
-	return render_template('show_posts.html', posts=post, form=search_form)
+
+	return render_template('show_posts.html', posts=post, form=search_form, day=day)
 
