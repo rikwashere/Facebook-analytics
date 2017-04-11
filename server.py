@@ -51,9 +51,10 @@ def close_db(error):
 @app.route('/', methods=['POST', 'GET'])
 def index():
 	db = get_db()
-	posts = query_db('SELECT * FROM facebook ORDER BY datum DESC')
+	posts = query_db('SELECT * FROM facebook ORDER BY time_stamp DESC')
 	search_form = SearchForm()	
 	num_post = 20
+	# rebuild
 	return render_template('show_posts.html', posts=posts[:num_post], form=search_form)
     
 @app.route('/search/', methods=['POST'])
@@ -63,7 +64,7 @@ def handle_data():
 	app.logger.info('Looking for URL: %s', request.form['search'])
 
 	post = query_db('SELECT * FROM facebook WHERE link = ?', url)
-	app.logger.info('Results: %s', post)
+	app.logger.info('Results: %s' % post)
 	search_form = SearchForm()	
 	return render_template('show_posts.html', posts=post, form=search_form)
 

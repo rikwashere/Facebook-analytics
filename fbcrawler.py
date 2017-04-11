@@ -1,6 +1,7 @@
-import unicodecsv as csv
+import unicodecsv as csv 
 import datetime
 import requests
+import logging
 import pickle
 import facepy
 import sqlite3
@@ -9,62 +10,53 @@ import sys
 import os
 import re
 
+logging.basicConfig(filename='errors.log',level=logging.DEBUG)
+
 class Post:
-	def __init__(self, data, source):
-		if source == 'facebook':
-			self.text = None
-			self.id = None
-			self.link = None
-			self.creator = None
-			self.type = None
-			self.insight = False
+	def __init__(self, data):
+		self.text = None
+		self.id = None
+		self.link = None
+		self.creator = None
+		self.type = None
+		self.insight = False
+		
+		# time stuff
+		self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
+		self.c_time = self.timestamp.isoformat()
+		self.week_day = self.timestamp.weekday()
+		self.mod_time = datetime.datetime.now()
 
-			self.timestamp = datetime.datetime.strptime(data['created_time'], '%Y-%m-%dT%H:%M:%S+0000')
+		# meta
+		self.id = data['id']
+		self.type = data['type']
+		if data.has_key('admin_creator'):
+			self.creator = data['admin_creator']['name']
 
-			# link not always present
-			if data.has_key('link'):
-				self.link = data['link']
-
-			if data.has_key('message'):
-				self.text = data['message']
-				
-				# find shortener
-				if re.search('https://nrch.nl/', self.text):
-					match = re.search('https://nrch.nl/', self.text)
-					short = self.text[match.start():match.end() + 4]
-					self.link = requests.get(short).url
-			
-			# posts sometimes do not have a message
-			if data.has_key('status_type'):
-				if data['status_type'] != 'shared_story':
-					if data.has_key('message'):
-						self.text = data['message']
-
-			# admin creator datapoint not always present
-			if data.has_key('admin_creator'):
-				self.creator = data['admin_creator']['name']
-			
-			self.id = data['id']
-			self.type = data['type']
-
-			# write to sql in init, merging to_sql in init, so only update part remains
-			# add meta timestamp - crawl time - to data
-
-		elif source == 'sql':
-			keys = ['id', 'type', 'timestamp', 'link', 'creator', 'text', 'insight', 'impressions', 'consumptions', 'shares', 'clicks']
-			data = dict(zip(keys, data))
-
-			self.id = data['id']
-			self.type = data['type']
-			self.timestamp = datetime.datetime.strptime(data['timestamp'], '%Y-%m-%dT%H:%M:%S')
+		# link not always present
+		if data.has_key('link'):
 			self.link = data['link']
-			self.creator = data['creator']
-			self.text = data['text']
-			self.insight = data['insight']
-			self.impressions = data['impressions']
-			self.consumptions = data['consumptions']
-			self.shares = data['shares']
-			self.clicks = data['clicks']
+
+		if data.has_key('message'):
+			self.text = data['message']
+			
+			# find shortener
+			if re.search('https://nrch.nl/', self.text):
+				match = re.search('https://nrch.nl/', self.text)
+				short = self.text[match.start():match.end() + 4]
+				self.link = requests.get(short).url
+		
+		# posts sometimes do not have a message
+		if data.has_key('status_type'):
+			if data['status_type'] != 'shared_story':
+				if data.has_key('message'):
+					self.text = data['message']
+
+		# insight 
+		self.get_insight()
+
+		# save to database
+		self.to_sql()
 
 
 	def get_insight(self):
@@ -77,10 +69,16 @@ class Post:
 			if m == 'post_consumptions_by_type':
 				try:
 					output['link_click'] = data['data'][0]['values'][0]['value']['link clicks']
-				except TypeError:
+				except TypeError, IndexError:
 					output['link_click'] = None
+					logging.warning('Error with %s \n %s' % (self.id, output))
 			else:
-				output[m] = data['data'][0]['values'][0]['value']
+				try:
+					output[m] = data['data'][0]['values'][0]['value']
+				except:
+					output[m] = None
+					logging.warning('Error with %s \n %s' % (self.id, output))
+
 
 		self.impressions = output['post_impressions']
 		self.consumptions = output['post_consumptions']
@@ -110,53 +108,31 @@ class Post:
 
 		with open('output.csv', 'a') as csv_out:
 			writer = csv.writer(csv_out, delimiter='\t')
-			writer.writerow(out)
+			writer.writerow(out)		
 
-	def to_list(self):
-		if self.insight == True:
-			return [	self.id,
-						self.type,
-						self.timestamp.isoformat(),
-						self.link,
-						self.creator,
-						self.text,
-						self.insight,
-						self.impressions,
-						self.consumptions,
-						self.shares,
-						self.clicks
-					]
-		else:
-			return [	self.id,
-						self.type,
-						self.timestamp.isoformat(),
-						self.link,
-						self.creator,
-						self.text,
-						self.insight,
-						None,
-						None,
-						None,
-						None
-					]
-
-	def to_sql(self, update):
+	def to_sql(self):
 		# connect db
 		conn = sqlite3.connect('facebook.db')
 		c = conn.cursor()
+		
+		export = [	self.id,
+					self.type,
+					self.timestamp,
+					self.c_time,
+					self.week_day,
+					self.mod_time,
+					self.link,
+					self.creator,
+					self.text,
+					self.impressions,
+					self.consumptions,
+					self.shares,
+					self.clicks,
+			]
 
-		if update == True:
-			if self.insight == False:
-				self.get_insight()
-				update = [ self.insight, self.impressions, self.consumptions, self.shares, self.clicks, self.id  ]
-				c.execute("UPDATE facebook SET insight = ?, impressions = ?, consumptions = ?, shares = ?, clicks = ? WHERE id = ?", update)
-		else:
-			c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", self.to_list())
+		c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", export)
 
 		conn.commit()
-
-		# rewrite to update: include basic SQL dump		 in init: add timestamp when entry updates. 
-
 
 def getToken():
 	token = raw_input('Token expired. Enter new token\nGet one here: https://developers.facebook.com/tools/explorer/\n> ')
@@ -195,15 +171,17 @@ if 'facebook.db' not in os.listdir('.'):
 	c.execute('''CREATE TABLE facebook 
 				(	id text,
 					type text,
-					datum date,
+					time_stamp date,
+					c_time timestamp,
+					week_day int,
+					mod_time timestamp,
 					link text,
 					creator text,
 					message text,
-					insight boolean,
-					impressions real,
-					consumptions real,
-					shares real,
-					clicks real
+					impressions int,
+					consumptions int,
+					shares int,
+					clicks int
 				)
 			''')
 	conn.commit()
@@ -219,22 +197,15 @@ dates = []
 while posts.has_key('paging'):
 	for post in posts['data']:
 		if post['id'] in ids:
-			t = (post['id'], )
-			data = c.execute('SELECT * FROM facebook where id=?', t)
-			d = data.fetchall()
-			post_obj = Post(d[0], 'sql')
-			# als time.now - time.post dan 24 uur: ververs insights	
-			post_obj.to_sql(True)
+			print '%s was scraped' % post['id']
+			continue
 		else:
-			post_obj = Post(post, 'facebook')
-			post_obj.to_sql(False)
+			post_obj = Post(post)
 
 		if post_obj.timestamp.date() not in dates:
 			print 'Processing:', post_obj.timestamp.date()
-		
+	
 		dates.append(post_obj.timestamp.date())
 
 	posts = requests.get(posts['paging']['next']).json()	
 	print '* Crawled %i posts' % len(dates)
-	
-	# build sql database

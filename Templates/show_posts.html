@@ -8,11 +8,10 @@ function hide(num) {
     var x_btn = document.getElementById('btn-' + num);
     if (x.style.display === 'none') {
         x.style.display = 'block';
-        x_btn.innerHTML = 'Hide';
-        x_btn.style.display = 'none';
+        x_btn.innerHTML = 'Hide post message';
     } else {
         x.style.display = 'none';
-        x_btn.innerHTML = 'Show ';
+        x_btn.innerHTML = 'Show post message';
     }
 }
 </script>
@@ -31,7 +30,7 @@ function hide(num) {
       <tr>
         <td>Impressions</td>
         <td>{{ post.impressions }}</td>
-        <td>{{ post.datum }}</td>
+        <td>{{ post.time_stamp }}</td>
         <td><a href="https://facebook.com/{{ post.id }}" target="_blank">View on Facebook</a></td>
       </tr>
       <tr>
@@ -51,8 +50,8 @@ function hide(num) {
       <tr>
         <td>Clicks</td>
         <td>{{ post.clicks }}</td>
-        <td></td>
-        <td></td>
+        <td>{{ post.week_day }}</td>
+        <td>{{ post.c_time }}</td>
       </tr>
     </table>
     <div>
