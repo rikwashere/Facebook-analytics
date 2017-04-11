@@ -58,7 +58,6 @@ class Post:
 		# save to database
 		self.to_sql()
 
-
 	def get_insight(self):
 		metrics = ['post_impressions', 'post_consumptions', 'post_consumptions_by_type']
 		output = {}
@@ -69,15 +68,15 @@ class Post:
 			if m == 'post_consumptions_by_type':
 				try:
 					output['link_click'] = data['data'][0]['values'][0]['value']['link clicks']
-				except TypeError, IndexError:
+				except IndexError as e:
 					output['link_click'] = None
-					logging.warning('Error with %s \n %s' % (self.id, output))
+					logging.warning('Error %s with %s \n %s' % (e.message, self.id, output))
 			else:
 				try:
 					output[m] = data['data'][0]['values'][0]['value']
-				except:
+				except IndexError as e:
 					output[m] = None
-					logging.warning('Error with %s \n %s' % (self.id, output))
+					logging.warning('Error %s with %s \n %s' % (e.message, self.id, output))
 
 
 		self.impressions = output['post_impressions']
