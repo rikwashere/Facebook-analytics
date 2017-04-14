@@ -19,7 +19,7 @@ function hide(num) {
 
 <h1>Laatste {{ posts|length }} posts</h1>
 {% for post in posts %}
-  <h2>{{ ' '.join(post.link.split('/')[-1].split('-')[:-2]) }}</h2>
+  <h2>{{ post.link }}</h2>
   <div class='post' id={{ post.type }}>
     <table>
       <tr>

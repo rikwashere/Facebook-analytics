@@ -1,7 +1,9 @@
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash, jsonify
+from wtforms.widgets.core import Select, HTMLString, html_params
 from wtforms.validators import DataRequired
-from wtforms import StringField
+from wtforms import StringField, DateField
 from flask_wtf import Form
+import datetime
 import sqlite3
 import os
 
@@ -19,6 +21,36 @@ app.config.update(dict(
 
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
+
+class SelectDateWidget(object):
+    FORMAT_CHOICES = {
+        '%d': [(x, str(x)) for x in range(1, 32)],
+        '%m': [(x, str(x)) for x in range(1, 13)],
+        '%y': [(x, str(x)) for x in range(2014, 2018)],
+    }
+
+    def __call__(self, field, **kwargs):
+        field_id = kwargs.pop('id', field.id)
+        html = []
+        for format in field.format.split():
+            choices = self.FORMAT_CHOICES[format]
+            id_suffix = format.replace('%', '-')
+            params = dict(kwargs, name=field.name, id=field_id + id_suffix)
+            html.append('<select %s>' % html_params())
+            if field.data:
+                current_value = int(field.data.strftime(format))
+            else:
+                current_value = None
+            for value, label in choices:
+                selected = (value == current_value)
+                html.append(Select.render_option(value, label, selected))
+            html.append('</select>')
+
+        return HTMLString(''.join(html))
+
+
+class DateForm(Form):
+    search = DateField('search', format='%d %m %y', widget=SelectDateWidget())
 
 def connect_db():
     """Connects to the specific database."""
@@ -41,7 +73,6 @@ def query_db(query, args=(), one=False):
 	rv = cur.fetchall()
 	cur.close()
 	return (rv[0] if rv else None) if one else rv    
-
 
 @app.teardown_appcontext
 def close_db(error):
@@ -110,3 +141,26 @@ def handle_data():
 
 	return render_template('show_posts.html', posts=post, form=search_form, day=day)
 
+@app.route('/dagkoersen/')
+def show_day():
+	db = get_db()
+	search_form = SearchForm()
+	today = datetime.datetime.now().date()
+	data = {}
+	
+	posts = query_db('SELECT * FROM facebook where DATE(time_stamp) = ?', (today, ))
+	data['impressions'] = sum([post['impressions'] for post in posts])
+
+	data['posts'] = posts
+	data['date'] = today
+	data['impressions'] = sum([post['impressions'] for post in posts if post['impressions'] != None])
+	data['consumptions'] = sum([post['consumptions'] for post in posts if post['consumptions'] != None])
+	data['shares'] = sum([post['shares'] for post in posts if post['shares'] != None])
+	data['clicks'] = sum([post['clicks'] for post in posts if post['clicks'] != None])
+	# search_form naar date_form
+	date_form = DateForm()
+	return render_template('show_day.html', data=data, form=date_form)
+
+
+
+	

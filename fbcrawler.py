@@ -14,6 +14,7 @@ logging.basicConfig(filename='errors.log',level=logging.DEBUG)
 
 class Post:
 	def __init__(self, data):
+		# we can differntiate between a post that was started in GN4 or in WordPress: interesting angle for analysis?
 		self.text = None
 		self.id = None
 		self.link = None
@@ -71,6 +72,9 @@ class Post:
 				except IndexError as e:
 					output['link_click'] = None
 					logging.warning('Error %s with %s \n %s' % (e.message, self.id, output))
+				except TypeError as e:
+					output['link_click'] = None
+					logging.warning('Error %s with %s \n %s' % (e.message, self.id, output))
 			else:
 				try:
 					output[m] = data['data'][0]['values'][0]['value']
@@ -90,24 +94,7 @@ class Post:
 		else:
 			self.shares = None
 		
-		self.insight = True
-
-	def to_file(self):
-		# check for keys, or process what to write to csv as arg
-
-		if 'output.csv' not in os.listdir('.'):
-			with open('output.csv', 'w') as csv_out:
-				writer = csv.writer(csv_out, delimiter='\t')
-				writer.writerow(['Article', 'Facebook ID', 'Impressions', 'Consumptions', 'Shares', 'Clicks'])	
-
-		if self.insight != True: 
-			self.get_insight()
-	
-		out = [self.link, self.id, self.impressions, self.consumptions, self.shares, self.clicks]
-
-		with open('output.csv', 'a') as csv_out:
-			writer = csv.writer(csv_out, delimiter='\t')
-			writer.writerow(out)		
+		self.insight = True	
 
 	def to_sql(self):
 		# connect db

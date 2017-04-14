@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<script>
+function hide(num) {
+    var x = document.getElementById(num);
+    var x_btn = document.getElementById('btn-' + num);
+    if (x.style.display === 'none') {
+        x.style.display = 'block';
+        x_btn.innerHTML = 'Hide post message';
+    } else {
+        x.style.display = 'none';
+        x_btn.innerHTML = 'Show post message';
+    }
+}
+
+</script>
+
+<div class='post'>
+<h1>De Facebook dagkoersen voor {{ data.date }}</h1>
+<table>
+  <tr>
+    <th>Metric</th>
+    <th>Number</th>
+  </tr>
+  <tr>
+    <td>Number of posts</td>
+    <td>{{ data|length }}</td>
+  </tr>
+  <tr>
+    <td>Impressions</td>
+    <td>{{ data.impressions }}</td>
+  </tr>
+  <tr>
+    <td>Consumptions</td>
+    <td>{{ data.consumptions }}</td>
+  </tr>
+  <tr>
+    <td>Shares</td>
+    <td>{{ data.shares }}</td>
+  <tr>
+    <td>Clicks</td>
+    <td>{{ data.clicks }}</td>
+  <tr>
+</table>
+</div>
+
+{% endblock %}
