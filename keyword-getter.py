@@ -5,7 +5,7 @@ import sys
 def getKeywords(url):
 	soup = BeautifulSoup(requests.get(url).text, 'html.parser')
 
-	title = soup.h1.get_text()
+	title = soup.find('h1', {'data-flowtype' : 'headline'}).text
 
 	# keywords
 	keywords = soup.findAll('meta', {'name':'keywords'})
@@ -27,10 +27,9 @@ def getKeywords(url):
 	# dossier
 	dossier = soup.find('h6', {'class': 'more-in-dossier__heading__headline'}).get_text()
 
-	return {	title : 'title',
-				dossier : 'dossier',
-				tags : 'tags' }
-
+	return {	'title' : title,
+				'dossier' : dossier,
+				'tags' : tags }
 
 
 if __name__ == '__main__':
