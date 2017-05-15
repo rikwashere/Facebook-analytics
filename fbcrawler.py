@@ -1,3 +1,5 @@
+from bs4 import BeautifulSoup
+from urlparse import urlparse
 import unicodecsv as csv 
 import datetime
 import requests
@@ -57,6 +59,9 @@ class Post:
 		# insight 
 		self.get_insight()
 
+		# meta
+		self.get_meta()
+
 		# save to database
 		self.to_sql()
 
@@ -74,6 +79,9 @@ class Post:
 					output['link_click'] = None
 					logging.warning('Error %s with %s \n %s' % (e.message, self.id, output))
 				except TypeError as e:
+					output['link_click'] = None
+					logging.warning('Error %s with %s \n %s' % (e.message, self.id, output))
+				except KeyError as e:
 					output['link_click'] = None
 					logging.warning('Error %s with %s \n %s' % (e.message, self.id, output))
 			else:
@@ -97,9 +105,63 @@ class Post:
 		
 		self.insight = True	
 
+	def get_meta(self):
+		# only process nrc.nl
+		parser = urlparse(self.link)
+
+		if parser[1] != 'www.nrc.nl':
+			self.title = None
+			self.tags = None
+			self.dossier = None
+			return
+
+		soup = BeautifulSoup(requests.get(self.link).text, 'html.parser')
+		
+		#title
+		title = soup.find('h1', {'data-flowtype' : 'headline'})
+
+		if title:
+			self.title = title.text
+		if soup.find('h1', { 'data-flowtype' : 'mondayprofile-headline' }):		
+			# maandagprofiel
+			title = soup.find('h1', { 'data-flowtype' : 'mondayprofile-headline' })
+			self.title = title.text
+		else:
+			# catch all title on URL
+			self.title = parser.path.split('/')[-1].split('-')[0]
+
+		# keywords
+		keywords = soup.findAll('meta', {'name':'keywords'})
+		keys = [k['content'] for k in keywords][0]
+		keys = keys.split(',')
+		
+		tags = []
+		
+		for k in keys:
+			k = k.strip()
+			if k == '':
+				pass
+			else:
+				tags.append(k)
+
+		if tags == []:
+			self.tags = None
+		elif len(tags) == 1:
+			self.tags = tags[0]
+		if len(tags) > 1:
+			self.tags = ', '.join(tags)
+
+		# dossier
+		dossier = soup.find('h6', {'class': 'more-in-dossier__heading__headline'})
+
+		if dossier:
+			self.dossier = dossier.text
+		else:
+			self.dossier = None
+
 	def to_sql(self):
 		# connect db
-		conn = sqlite3.connect('facebook.db')
+		conn = sqlite3.connect('facebook-meta.db')
 		c = conn.cursor()
 		
 		export = [	self.id,
@@ -111,13 +173,16 @@ class Post:
 					self.link,
 					self.creator,
 					self.text,
+					self.title,
+					self.dossier,
+					self.tags,
 					self.impressions,
 					self.consumptions,
 					self.shares,
 					self.clicks,
 			]
 
-		c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", export)
+		c.execute("INSERT INTO facebook VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", export)
 
 		conn.commit()
 
@@ -152,8 +217,8 @@ posts = graph.get(profile['id'] + '/posts')
 # if sys.argv[1] == -update check hydrated every post posted less than 24 hours ago and only crawl last day
 
 # resuming if db
-if 'facebook.db' not in os.listdir('.'):
-	conn = sqlite3.connect('facebook.db')
+if 'facebook-meta.db' not in os.listdir('.'):
+	conn = sqlite3.connect('facebook-meta.db')
 	c = conn.cursor()
 	c.execute('''CREATE TABLE facebook 
 				(	id text,
@@ -165,6 +230,9 @@ if 'facebook.db' not in os.listdir('.'):
 					link text,
 					creator text,
 					message text,
+					title text,
+					dossier text,
+					tags text,
 					impressions int,
 					consumptions int,
 					shares int,
@@ -174,7 +242,7 @@ if 'facebook.db' not in os.listdir('.'):
 	conn.commit()
 	ids = []
 else:
-	conn = sqlite3.connect('facebook.db')
+	conn = sqlite3.connect('facebook-meta.db')
 	c = conn.cursor()
 	c.execute('SELECT id FROM facebook')
 	ids = [id[0] for id in c.fetchall()]
