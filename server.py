@@ -144,7 +144,6 @@ def handle_data():
 @app.route('/dagkoersen/')
 def show_day():
 	db = get_db()
-	search_form = SearchForm()
 	today = datetime.datetime.now().date()
 	data = {}
 	

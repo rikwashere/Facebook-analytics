@@ -65,7 +65,7 @@ function hide(num) {
         <td>Clicks</td>
         <td><p>{{ post.clicks }}</p></td>
         {% if day %}
-        <td>{{ day.clicks }} ({{ '%.1f' % (100 * (post.clicks / day.clicks)) }}%)</td>
+        <td>{{ day.clicks }} ({{ '%.1f' % (100 * (post.clicks / day.clicks if post.clicks != None else 0)) }}%)</td>
         {% endif %} 
         <td id='week_day' data={{ post.week_day }}>{{ post.week_day }}</td>
         <td>{{ post.mod_time }}</td>

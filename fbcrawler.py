@@ -31,6 +31,7 @@ class Post:
 		# meta
 		self.id = data['id']
 		self.type = data['type']
+
 		if data.has_key('admin_creator'):
 			self.creator = data['admin_creator']['name']
 
