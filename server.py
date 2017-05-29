@@ -13,7 +13,7 @@ class SearchForm(Form):
     search = StringField('search', validators=[DataRequired()])
 
 app.config.update(dict(
-    DATABASE=os.path.join(app.root_path, 'facebook.db'),
+    DATABASE=os.path.join(app.root_path, 'facebook-meta.db'),
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
@@ -144,7 +144,6 @@ def handle_data():
 @app.route('/dagkoersen/')
 def show_day():
 	db = get_db()
-	search_form = SearchForm()
 	today = datetime.datetime.now().date()
 	data = {}
 	
