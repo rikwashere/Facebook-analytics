@@ -122,7 +122,7 @@ class Post:
 
 		if title:
 			self.title = title.text
-		if soup.find('h1', { 'data-flowtype' : 'mondayprofile-headline' }):		
+		elif soup.find('h1', { 'data-flowtype' : 'mondayprofile-headline' }):		
 			# maandagprofiel
 			title = soup.find('h1', { 'data-flowtype' : 'mondayprofile-headline' })
 			self.title = title.text
@@ -264,5 +264,3 @@ while posts.has_key('paging'):
 
 	posts = requests.get(posts['paging']['next']).json()	
 	print '* Crawled %i posts' % len(dates)
-
-#Hallo
