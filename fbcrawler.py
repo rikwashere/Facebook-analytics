@@ -29,10 +29,14 @@ class Post:
 		self.c_time = self.timestamp.isoformat()
 		self.week_day = self.timestamp.weekday()
 		self.mod_time = datetime.datetime.now()
-
+ 
 		# meta
 		self.id = data['id']
-		self.type = data['type']
+
+		try:
+			self.type = data['type']
+		except KeyError:
+			data = graph.get(data['id'] + '?fields=link,id,admin_creator,message,status_type')
 
 		if data.has_key('admin_creator'):
 			self.creator = data['admin_creator']['name']
@@ -107,7 +111,14 @@ class Post:
 
 	def get_meta(self):
 		# only process nrc.nl
-		parser = urlparse(self.link)
+		if self.link:
+			parser = urlparse(self.link)
+		else:
+			self.title = None
+			self.tags = None
+			self.dossier = None
+			
+			return
 
 		if parser[1] != 'www.nrc.nl':
 			self.title = None
