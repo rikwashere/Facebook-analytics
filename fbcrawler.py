@@ -143,8 +143,10 @@ class Post:
 
 		# keywords
 		keywords = soup.findAll('meta', {'name':'keywords'})
-		keys = [k['content'] for k in keywords][0]
-		keys = keys.split(',')
+
+		if keywords:
+			keys = [k['content'] for k in keywords][0]
+			keys = keys.split(',')
 		
 		tags = []
 		
